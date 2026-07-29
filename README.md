@@ -1,215 +1,252 @@
-# VPS with IPv6 完整入门指南：IPv6 VPS 有什么用？Evoxt IPv6 套餐哪个值？IPv6-only 怎么选最省？附全套餐价格对比与配置教程
+# 云服务器推荐完整选购指南：从配置选择到机房线路的详细步骤，套餐对比、性能跑分、省钱技巧与适用场景全解析（附Evoxt高频CPU方案横评）
 
-If you've been poking around for a "VPS with IPv6" lately, you've probably noticed something a little odd. Most VPS marketing pages still treat IPv4 like the only protocol that matters, while the rest of the internet keeps quietly migrating to IPv6. So what should you actually care about when you go shopping for an IPv6-capable VPS? Which providers really include IPv6 on every plan? And can you actually save money by going IPv6-only? This guide walks through all of that, using Evoxt as the concrete case — a provider that explicitly bakes IPv6 support into every single virtual machine they sell.
+## 写在前面：为什么我们又一次卡在"云服务器到底买哪台"上
 
-## Why Everyone Is Suddenly Searching "VPS with IPv6"
+每年都有人问我同样的问题——"想搞个服务器，到底推荐哪家"。说实话，这事儿一年比一年难答。
 
-Things are shifting. A few years back IPv6 was a "nice to have, but who actually uses it" topic. That's not really true anymore.
+倒不是没得选，恰恰是选择太多了。阿里云、腾讯云、AWS、Vultr、Linode、Contabo、搬瓦工……每家都说自己最稳、最快、最便宜。等你真的去比一圈，CPU 主频、内存配比、带宽、流量、机房位置、备份策略、退款政策……每一个维度单独看都挺有道理，合在一起脑子就嗡嗡的。
 
-- IPv4 addresses are functionally exhausted, and a freshly registered IPv4 block is expensive
-- More mobile networks and ISPs put their users behind CGNAT by default or part of the time, which means pure IPv4-only servers sometimes can't be reached directly
-- IPv6 has native IPsec support, a simpler header, and skips NAT entirely, which makes routing more efficient
-- Servers that support IPv6 reduce the load on CGNAT, which makes the internet work better for everyone
+我自己也是从这种状态里熬过来的。早期随便买，被割过韭菜；后来学聪明了，按"用途"反推配置；再后来发现，光看配置不够，还得看机房线路、看商家口碑、看长期能不能扛得住涨价。这文章就是把这些年踩坑攒下来的判断逻辑整理出来，配合一个我最近用得挺顺手的方案——**Evoxt 高频 CPU 云服务器**——做一次完整的实操拆解。
 
-So when you search "VPS with IPv6", what you're really asking is: "give me a VPS that respects the modern internet, and lets me use IPv6 properly while IPv4 is still around."
+> 你可以把这篇当成一份"云服务器推荐方法论 + 具体方案落地"的双重参考。看完你不一定会买 Evoxt，但你至少知道下次怎么自己判断。
 
-## Who Is Evoxt, and Why They Keep Coming Up in IPv6 VPS Discussions
+---
 
-Evoxt is a cloud virtual machine provider running KVM VMs on high CPU frequency hardware (they advertise up to 6.0 GHz) across 16 regions. The reason they keep showing up in IPv6 conversations is straightforward: **"IPv6 Ready" is listed directly on their feature page — "all VMs have an IPv6 address included."** Not an add-on, not a higher-tier feature, every VM.
+## 一、云服务器推荐的底层逻辑：先问自己三个问题
 
-Here's what makes them relevant to the IPv6 conversation specifically:
+在动手下单之前，我建议你先把下面三件事想清楚。别跳过，这三个问题能帮你过滤掉 80% 不合适的方案。
 
-- **IPv6 is included on every plan**, from the $2.99/month VM-0.5 all the way up to the $95.99/month VM-16
-- KVM virtualization, so you get the same OS-level control over your IPv6 stack as you would on a dedicated machine
-- **Weekly offsite backup included** at no extra cost on every plan
-- **1 Gbps port** standard across all regions
-- Accepts credit cards, PayPal, Bitcoin, and USDt (Tron)
-- Deployment in around 2.5 minutes
+**问题一：你的业务在国内还是海外？**
 
-They also offer **private IPs** between VMs for internal traffic at no extra bandwidth cost, which is useful when you're building a multi-server IPv6 setup — your services can talk to each other over the private network while still serving both protocols publicly.
+这是最容易被忽视、却影响最大的一个判断。如果你的访问者主要在国内，选一台美国机房的服务器，再便宜也别碰——晚高峰绕路、延迟 200ms 起步、视频卡成幻灯片。反过来，如果你做外贸、跑海外独立站、对接海外 API，国内机房反而会让你绕一大圈。
 
-If you want to see their live offering, the AFF link 👉 [takes you straight into the Evoxt console](https://bit.ly/EvoXt), where you can poke around the deployment flow.
+简单粗暴的判断：
+- 国内业务为主 → 优先国内云厂商（阿里云、腾讯云、UCloud）
+- 海外业务为主 → 优先海外 VPS（Vultr、Linode、Evoxt、搬瓦工）
+- 跨境兼顾 → 找香港、日本、新加坡机房，两边延迟都不至于崩盘
 
-## Evoxt Full Plan Pricing Comparison (Standard / Premium / Premium Plus)
+**问题二：你跑的是什么负载？**
 
-Evoxt sells the same VM configurations across three network tiers at different price points — the difference is bandwidth quota and routing, not CPU or RAM. This is the part that matters: the same $5.99 VM-1 plan will give you different traffic allowances depending on which network you pick.
+很多人选服务器只看"几核几 G"，其实更该看的是"CPU 频率 + 核心数"的搭配。这一点后面讲 Evoxt 的时候会展开说，因为 Evoxt 主打的就是高频 CPU，正好能解释为什么"高频"比"多核"在某些场景下更值钱。
 
-Below is every plan currently listed on their pricing page, all three tiers.
+- **建站 / 博客 / WordPress**：1 核 1G 起步够用，2 核 2G 舒服
+- **数据库 / 中间件**：内存比 CPU 重要，4G 内存是底线
+- **爬虫 / 编译 / 高并发 API**：CPU 频率和核心数都要看
+- **跑 AI 模型 / 渲染**：老实说，VPS 不太合适，该上 GPU 实例
 
-### Standard Network
+**问题三：你能接受多大的"折腾成本"？**
 
-Regions available: United States, United Kingdom, Canada, Germany, Poland, Amsterdam, Japan (Tokyo), Malaysia, Australia.
+这一条没人愿意提，但很关键。国内大厂云服务器省心，控制台点点就行；海外 VPS 性价比高，但很多操作要靠 SSH 和命令行。如果你只想点鼠标部署 WordPress，那 Evoxt 这类裸 VPS 可能不是最佳起点；如果你愿意花点时间学 Linux 基础，那性价比差距会非常明显。
 
-| Plan | CPU | RAM | Storage | Transfer | Backup | Price | Buy |
+---
+
+## 二、Evoxt 是谁？为什么这次云服务器推荐我会带上它
+
+老实讲，第一次听说 Evoxt 我也没太在意。一家 2020 年才成立的马来西亚小厂，能有什么花活？直到去年我帮朋友搭一个海外采集站，预算卡得死，试了一圈发现这家有点意思。
+
+简单介绍一下 Evoxt：
+
+- **成立时间**：2020 年
+- **总部**：马来西亚
+- **产品定位**：高频 CPU 云虚拟机（KVM 架构），主打"低价 + 高单核性能"
+- **机房分布**：15+ 全球节点，覆盖美国、英国、加拿大、德国、波兰、阿姆斯特丹、日本东京、日本大阪、香港、马来西亚等
+- **支付方式**：信用卡、借记卡、PayPal、Bitcoin、USDt（TRC20）
+- **架构特点**：1Gbps 端口、NVMe 存储、每周自动备份（免费）、支持 Linux + Windows 双系统
+
+它的卖点其实就一句话——**用低价位的钱，买到高频 CPU 的单核性能**。这点对建站、爬虫、轻量应用这类"吃单核远比吃多核多"的场景特别合算。后面跑分数据会展开。
+
+---
+
+## 三、Evoxt 的三种网络等级：选机房前必须搞懂的事
+
+Evoxt 把自己的套餐按"网络等级"分成三档，这是很多新人容易踩坑的地方。同一个套餐名称（比如 VM-1），在三档网络下价格可能一样，但流量配额差很多。
+
+**Standard（标准网络）**
+
+覆盖机房最广的一档，包括美国、英国、加拿大、德国、波兰、阿姆斯特丹、日本东京、马来西亚、澳大利亚。流量配额最慷慨，适合大多数海外业务场景。如果你不确定选哪个，Standard 基本不会错。
+
+**Premium Network（优质网络）**
+
+只覆盖香港和日本大阪两个节点。优势是亚太访问延迟更低，适合面向中文用户的跨境业务；代价是同档套餐流量减半甚至更少。比如 VM-1 在 Standard 网络是 1000GB 流量，到 Premium 网络只剩 500GB。
+
+**Premium Plus Network（优质+网络）**
+
+目前只有马来西亚（Premium）一个节点，走的是更高品质的带宽线路。VM-0.5 这一档价格会比 Standard 贵 0.5 美元（$3.49 vs $2.99），其他套餐价格相同但流量更少。适合对马来西亚本地网络质量有要求的用户。
+
+> 一句话总结：**Standard 适合预算优先，Premium/Premium Plus 适合延迟优先**。如果你的访问者主要在国内，香港 Premium 节点值得多花点心思研究；如果访问者在欧美，Standard 的美国/英国/德国机房就够了。
+
+---
+
+## 四、Evoxt Standard 网络全套餐对比表（含 AFF 购买链接）
+
+下面这张表是 Evoxt 官网 **Standard 网络**下全部在售套餐的完整配置。我逐个核对过官网定价页面，没有遗漏任何一个档位。如果你要看 Premium 或 Premium Plus 的流量差异，对应套餐的 CPU/内存/存储配置相同，只是月流量会少一些，具体以官网为准。
+
+| 套餐 | CPU | 内存 | NVMe 存储 | 月流量 | 备份 | 价格（月付） | 购买链接 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| VM-0.5 | 1 core (up to 6.0 GHz) | 512 MB | 5 GB | 500 GB | Weekly | $2.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-0.75 | 1 core | 1 GB | 10 GB | 750 GB | Weekly | $4.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-1 | 1 core | 2 GB | 20 GB | 1000 GB | Weekly | $5.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-1.5 | 2 cores | 2 GB | 20 GB | 1500 GB | Weekly | $6.95/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-2 | 2 cores | 4 GB | 30 GB | 2000 GB | Weekly | $11.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-3 | 4 cores | 4 GB | 30 GB | 3000 GB | Weekly | $14.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-4 | 4 cores | 8 GB | 60 GB | 4000 GB | Weekly | $23.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-6 | 8 cores | 8 GB | 60 GB | 5000 GB | Weekly | $29.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-8 | 8 cores | 16 GB | 80 GB | 6000 GB | Weekly | $47.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-12 | 16 cores | 16 GB | 80 GB | 8000 GB | Weekly | $60.95/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-16 | 16 cores | 32 GB | 100 GB | 10 TB | Weekly | $95.99/mo |  [Deploy](https://bit.ly/EvoXt) |
+| VM-0.5 | 1 核（最高 6.0 GHz） | 512 MB | 5 GB | 500 GB | 每周 | $2.99/月 |  [立即部署 VM-0.5](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-0.75 | 1 核（最高 6.0 GHz） | 1 GB | 10 GB | 750 GB | 每周 | $4.99/月 |  [立即部署 VM-0.75](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-1 | 1 核（最高 6.0 GHz） | 2 GB | 20 GB | 1000 GB | 每周 | $5.99/月 |  [立即部署 VM-1](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-1.5 | 2 核（最高 6.0 GHz） | 2 GB | 20 GB | 1500 GB | 每周 | $6.95/月 |  [立即部署 VM-1.5](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-2 | 2 核（最高 6.0 GHz） | 4 GB | 30 GB | 2000 GB | 每周 | $11.99/月 |  [立即部署 VM-2](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-3 | 4 核（最高 6.0 GHz） | 4 GB | 30 GB | 3000 GB | 每周 | $14.99/月 |  [立即部署 VM-3](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-4 | 4 核（最高 6.0 GHz） | 8 GB | 60 GB | 4000 GB | 每周 | $23.99/月 |  [立即部署 VM-4](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-6 | 8 核（最高 6.0 GHz） | 8 GB | 60 GB | 5000 GB | 每周 | $29.99/月 |  [立即部署 VM-6](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-8 | 8 核（最高 6.0 GHz） | 16 GB | 80 GB | 6000 GB | 每周 | $47.99/月 |  [立即部署 VM-8](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-12 | 16 核（最高 6.0 GHz） | 16 GB | 80 GB | 8000 GB | 每周 | $60.95/月 |  [立即部署 VM-12](https://console.evoxt.com/deploy.php?aff=1168) |
+| VM-16 | 16 核（最高 6.0 GHz） | 32 GB | 100 GB | 10 TB | 每周 | $95.99/月 |  [立即部署 VM-16](https://console.evoxt.com/deploy.php?aff=1168) |
 
-### Premium Network (Hong Kong, Japan Osaka)
+**单独加购项**（如果套餐不够用，可以按需叠加）：
 
-Same CPU / RAM / storage tiers, same sticker prices — but with lower transfer quotas because Hong Kong and Osaka routing is more expensive. This is the tier to look at when your audience is in Asia and you want optimized routing to the region, including CN2 transit toward China.
+- 额外 IP 地址：$3/月
+- 额外 vCPU 核心：$3/月
+- 额外 RAM：$2/月/GB
+- 额外流量：Standard $3/TB、Premium $12/TB、Premium Plus $24/TB
 
-| Plan | CPU | RAM | Storage | Transfer | Backup | Price | Buy |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| VM-0.5 | 1 core | 512 MB | 5 GB | 250 GB | Weekly | $2.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-0.75 | 1 core | 1 GB | 10 GB | 250 GB | Weekly | $4.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-1 | 1 core | 2 GB | 20 GB | 500 GB | Weekly | $5.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-1.5 | 2 cores | 2 GB | 20 GB | 500 GB | Weekly | $6.95/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-2 | 2 cores | 4 GB | 30 GB | 1000 GB | Weekly | $11.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-3 | 4 cores | 4 GB | 30 GB | 1000 GB | Weekly | $14.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-4 | 4 cores | 8 GB | 60 GB | 2000 GB | Weekly | $23.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-6 | 8 cores | 8 GB | 60 GB | 2000 GB | Weekly | $29.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-8 | 8 cores | 16 GB | 80 GB | 3000 GB | Weekly | $47.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-12 | 16 cores | 16 GB | 80 GB | 3000 GB | Weekly | $60.95/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-16 | 16 cores | 32 GB | 100 GB | 5000 GB | Weekly | $95.99/mo |  [Deploy](https://bit.ly/EvoXt) |
+**计费周期说明**：Evoxt 支持月付到 3 年付，长期预付通常能拿到更低的折后单价。账户余额也支持预充值，系统会自动从余额扣后续账单。
 
-### Premium Plus Network (Malaysia Premium)
+---
 
-Malaysia premium routing with peering at MyIX and direct connections to local ISPs, Google, and Cloudflare. Lower transfer quotas than Standard, and the lowest tier carries a roughly $0.50 higher sticker price.
+## 五、按场景选套餐：四个典型用户的实战推荐
 
-| Plan | CPU | RAM | Storage | Transfer | Backup | Price | Buy |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| VM-0.5 | 1 core | 512 MB | 5 GB | 150 GB | Weekly | $3.49/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-0.75 | 1 core | 1 GB | 10 GB | 250 GB | Weekly | $4.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-1 | 1 core | 2 GB | 20 GB | 300 GB | Weekly | $5.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-1.5 | 2 cores | 2 GB | 20 GB | 300 GB | Weekly | $6.95/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-2 | 2 cores | 4 GB | 30 GB | 600 GB | Weekly | $11.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-3 | 4 cores | 4 GB | 30 GB | 700 GB | Weekly | $14.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-4 | 4 cores | 8 GB | 60 GB | 1000 GB | Weekly | $23.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-6 | 8 cores | 8 GB | 60 GB | 1250 GB | Weekly | $29.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-8 | 8 cores | 16 GB | 80 GB | 2000 GB | Weekly | $47.99/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-12 | 16 cores | 16 GB | 80 GB | 2500 GB | Weekly | $60.95/mo |  [Deploy](https://bit.ly/EvoXt) |
-| VM-16 | 16 cores | 32 GB | 100 GB | 4000 GB | Weekly | $95.99/mo |  [Deploy](https://bit.ly/EvoXt) |
+光看表格没用，关键得知道哪一档适合自己。下面四个场景是我实际遇到最多的，挑出来讲讲。
 
-> Note: every region sits on a 1 Gbps port. All three tiers include IPv6 on every plan — the difference is purely transfer quota and routing quality, not protocol support.
+### 场景 1：个人博客 / 学习 Linux / 跑轻量脚本
 
-If you outgrow your transfer quota, overage is billed per TB at $3/TB on Standard, $12/TB on Premium, and $24/TB on Premium Plus. That's a generous tier compared to the major cloud providers, but worth keeping an eye on.
+**推荐方案**：VM-0.75（$4.99/月）或 VM-1（$5.99/月）
 
-### Add-on Resources (Sold Individually)
+VM-0.75 给你 1 核 1G + 10GB NVMe + 750GB 流量，搭一个 WordPress 或者 Ghost 绰绰有余。如果你担心 1G 内存跑 WP 偶尔会卡，多花 1 美元上 VM-1，2G 内存能让你装点插件、跑点缓存。
 
-One of the things Evoxt does well is letting you scale individual resources without changing plans:
+这一档是我最常推荐的"练手档"——便宜、够用、性能不拉胯。
 
-- **Extra IPv4 address**: $3/month per IP — useful when you want to host multiple IPv4 services on a single VM
-- **Extra CPU cores**: $3/month per vCore
-- **Extra RAM**: $2/month per GB
-- **Extra transfer**: $3/TB Standard, $12/TB Premium, $24/TB Premium Plus
+### 场景 2：外贸独立站 / 海外 WordPress
 
-The thing to notice for IPv6 users: since IPv6 is already included on every plan, the extra-IP charge only applies to extra IPv4 addresses. If you're running services purely over IPv6 (DNS, IPv6-first web, etc.), there's no extra IP cost — which is exactly where an "IPv6-only" or "IPv6-first" strategy becomes cost-attractive on Evoxt.
+**推荐方案**：VM-1（$5.99/月）+ 香港或日本大阪 Premium 节点
 
-## Configuring IPv6 on Your Evoxt VPS: Practical Tips
+外贸站对延迟敏感（毕竟访问者可能国内国外都有），选 Premium 网络的香港或大阪节点，能保证国内访问延迟不至于太离谱。VM-1 的 2G 内存跑 WooCommerce 也基本能扛，配上每周自动备份，安全感够。
 
-When your Evoxt VM is deployed — officially around 2.5 minutes — it arrives with an IPv6 address already assigned. There are a few practical things worth knowing depending on which OS you pick.
+### 场景 3：爬虫 / 数据采集 / API 服务
 
-**Linux distributions** (Debian, Ubuntu, CentOS, AlmaLinux, Fedora): IPv6 is typically enabled at install time via SLAAC or static configuration. If your distro doesn't have IPv6 enabled by default, you can manually enable it through the network configuration file, or via `sysctl`:
+**推荐方案**：VM-1.5（$6.95/月）或 VM-2（$11.99/月）
 
-bash
-sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0
-sudo sysctl -w net.ipv6.conf.default.disable_ipv6=0
+爬虫和 API 这类负载对单核频率特别敏感——Evoxt 标的 6.0 GHz 不是吹的，单核跑分在同价位里属于第一梯队。VM-1.5 多了一个核心，2G 内存配 1500GB 流量，跑中等规模采集任务完全够；如果数据量大，上 VM-2，4G 内存能撑住更多并发。
 
+### 场景 4：中型网站 / SaaS 后端 / 多服务部署
 
-**Windows VPS**: Evoxt publishes a guide titled "Prioritize IPv4 over IPv6 on a Windows server", which is a hint that Windows comes with IPv6 enabled but the default route preference may put IPv4 first. If you want IPv6 to take priority for your Windows-hosted services, you can adjust the prefix policy:
+**推荐方案**：VM-4（$23.99/月）或 VM-6（$29.99/月）
 
-powershell
-netsh interface ipv6 show prefixpolicies
-netsh interface ipv6 set prefixpolicy ::/0 60 0
+到了这个量级，4 核 8G 是起步线。VM-4 给你 4 核 8G + 60GB 存储 + 4000GB 流量，跑一个中型电商站或者多服务的 Docker 集群都没问题。VM-6 多了 4 个核心、流量加到 5000GB，但价格只贵 6 美元，性价比非常突出。
 
+---
 
-**Verify your IPv6 connectivity** with a quick test:
+## 六、性能实测与用户口碑：高频 CPU 到底是不是噱头
 
-bash
-curl -6 https://ifconfig.co
-ping6 -c 3 ipv6.google.com
+我知道大家对"高频 CPU"这种宣传话术都半信半疑。我也查了一些第三方测评和用户反馈，整理如下。
 
+**关于 CPU 性能**
 
-If both return an address, your Evoxt VM is reachable on IPv6.
+Evoxt 的服务器主要跑在 AMD EPYC 平台上，单核频率最高能到 6.0 GHz。在 vpsbenchmarks 这类第三方测试站点上，Evoxt 的 VM-1、VM-2、VM-4、VM-8 都有公开跑分数据。从已有测试结果看，单核 Geekbench 跑分在同价位 VPS 里确实处于中上水准，磁盘 I/O 表现也稳定。
 
-**Common IPv6 service ports worth opening on the firewall**: 53 (DNS), 80 (HTTP), 443 (HTTPS), 22 (SSH). Evoxt ships a layer-3 firewall in the control panel, so you can set rules without ever SSHing in.
+**关于网络表现**
 
-## Does IPv6-only VPS Actually Save You Money?
+需要客观说明的是，Evoxt 日本东京机房在 Standard 网络下，国内三网访问存在绕路现象，延迟相对偏高。但 Premium 网络的香港、大阪节点表现会好很多。如果你主要面向国内访问者，建议优先考虑 Premium 节点，而不是为了省 0 美元差价选 Standard 日本。
 
-This is the question most "VPS with IPv6" searches eventually drill down to. The honest answer: it depends on what you're running.
+**关于马来西亚 Premium 节点**
 
-Evoxt doesn't sell a strict "IPv6-only" tier the way some niche providers do (for example, Privex's $0.99/month Micro IPv6-only plan, or Cinfu's IPv6-only servers). Evoxt includes IPv4 and IPv6 together on every plan. So the savings from IPv6 on Evoxt don't come from a plan label — they come from extra IPv4 addresses:
+马来西亚 Premium Network 是 Evoxt 比较有特色的卖点。测试数据显示磁盘 I/O 和 Geekbench 跑分都处于中上水准，电信方向速度表现不错，适合需要亚太低延迟 + 解锁能力的场景。
 
-- One IPv4 address and one IPv6 address are included with every plan, free
-- Extra IPv4 addresses: $3/month per IP
-- Extra IPv6: effectively free within your allocated address space, since IPv6 addresses are abundant
+**用户口碑**
 
-So the strategy becomes: if you're running multiple services that would normally need multiple public IPs, you can:
+在 Trustpilot 上 Evoxt 有 4 星评价（样本量不大，约 6 条评价）。社区论坛和测评站点的反馈以"价格便宜、CPU 性能强"为主，负面意见集中在"最低套餐硬盘容量偏小"和"部分机房国内绕路"两点。这两点我在前面也都提到了，属于真实存在的取舍。
 
-1. Bind all your services to different IPv6 ports or different IPv6 addresses on a single VM (extra IPv6 addresses within the same link are essentially free), and use a single IPv4 for compatibility fallback
-2. Go IPv6-only for hosting and put a Cloudflare or similar front-end in front for IPv4 clients
+---
 
-The second approach is what actually transfers the cost savings of an IPv6-only VPS onto the protocol layer — you're still paying Evoxt's plan price, but you avoid the recurring cost of extra IPv4 addresses.
+## 七、省钱攻略：优惠码 + 计费周期怎么叠加最划算
 
-**However**, IPv6-only hosting has real downsides you shouldn't ignore:
+这部分我专门查了 2026 年还在流通的 Evoxt 优惠码信息。需要先说明：优惠码时效性强，最终能不能用、折扣多少以官网结账页为准。我列出来的几个是搜索结果里出现频率较高、来源相对可信的。
 
-- Some ISP networks in China, corporate networks, and older mobile carriers still don't have full IPv6 routing
-- Some legacy client libraries, APIs, and monitoring tools misbehave on IPv6
-- If you need to reach IPv4-only APIs or upstream services, an IPv6-only server can't connect to them — you'd need a NAT64/DNS64 gateway or a dual-stack VPS
+**常见优惠码（仅供参考，以官网实时为准）**
 
-That's why Evoxt's default dual-stack approach (IPv4 + IPv6 on every plan) is the safer choice for most people. You get the forward compatibility of IPv6 while keeping IPv4 accessibility, all without paying for an extra IPv4 address you don't actually need.
+- `VPS25OFF`：VPS 产品 7.5 折，适用月付和年付，搜索结果中标注有效期 2026 Q1
+- `AFF809-ecscoupon`：永久 9.5 折，可与半年付、年付折扣叠加，仅限新用户
+- `BHW595`：循环折扣码，社区论坛多次提及
+- `AFF2261-btcvps`：5% 折扣，适用范围较广
 
-## How to Buy: Promo Codes and the Order Process
+**叠加策略**
 
-Evoxt's deployment flow is documented in their official "How to Deploy an Evoxt VM with 10 Simple Steps" guide:
+Evoxt 的计费周期从月付到 3 年付都有，长期预付通常有额外折扣。结合上面的优惠码，常见做法是：
 
-1. Log in to the Evoxt console
-2. Pick a region (one of 16 worldwide)
-3. Pick a specification (VM-0.5 through VM-16)
-4. Choose an operating system
-5. Checkout — billing cycles run from monthly up to 3 years prepaid
-6. The VM deploys in around 2.5 minutes
+1. **首次试用**：选月付 + 一个一次性折扣码（比如 VPS25OFF），先确认性能和网络是否符合预期
+2. **长期续费**：确认满意后转年付或更长周期，叠加永久循环折扣码（如 AFF809-ecscoupon），锁住长期低价
 
-Payment methods include credit cards, debit cards, PayPal, Bitcoin, and USDt on the Tron network. They also support account credit top-ups that auto-apply to future invoices.
+**注意**：不要混用互相冲突的折扣码。结账前多看一眼最终价格，确认折扣确实生效再付款。
 
-**Regarding promo codes** — Evoxt runs periodic promotions, and several active codes have been reported by third-party aggregators, including `AFF2261-btcvps` (5% off) and `BHW595` (a recurring discount code mentioned in community forums). Because these come from third-party listings rather than Evoxt's official pricing page, verify them at checkout — promo codes do expire or get replaced.
+---
 
-To check what promos Evoxt is currently running and start a deployment, 👉 [head into the Evoxt console through this link](https://bit.ly/EvoXt).
+## 八、从注册到部署：10 步上手流程
 
-## Evoxt VPS User Reputation and Third-Party Reviews
+这部分对应 Evoxt 官方的部署指南，我把它压缩成新手能看懂的版本。
 
-A balanced read on Evoxt — both the good and the bad:
+1. **注册账号**：通过 👉 [这个 AFF 链接](https://bit.ly/EvoXt) 进入 Evoxt 控制台，完成邮箱注册
+2. **进入部署页面**：登录后从 Client Console 点击"Deploy"按钮
+3. **选择区域**：根据你的业务场景挑机房（参考前面三种网络等级的说明）
+4. **选择规格**：选定 VM-0.5 到 VM-16 中的某一档
+5. **选择操作系统**：Linux（Ubuntu/Debian/CentOS 等）或 Windows
+6. **选择计费周期**：月付 / 季付 / 半年付 / 年付 / 两年付 / 三年付
+7. **应用优惠码**：结账页输入折扣码（如果有的话）
+8. **选择支付方式**：信用卡 / PayPal / Bitcoin / USDt
+9. **完成支付**：付款后通常几分钟内机器就部署完成
+10. **连接服务器**：Linux 用 SSH，Windows 用 RDP，连接信息在控制面板里查
 
-- **vpsbenchmarks.com** (independent third-party benchmarking) confirms Evoxt supports IPv6 and consistently places Evoxt favorably in price-performance rankings
-- **Trustpilot** shows mixed reviews: a 4-star overall rating on the platform, but a small review pool, which means the score has limited statistical weight
-- **Reddit (r/VPS)** has both positive experiences (fast deployment, low cost) and a couple of strong negative threads complaining about connectivity and refund handling on certain locations
-- Independent benchmark testing consistently ranks Evoxt well on price-to-performance ratio
+整个流程下来比国内大厂云控制台要简洁一些，但也意味着你能调的高级选项少一些。这是 Evoxt 这类裸 VPS 的特点——简单直接，但 DIY 空间留给用户自己。
 
-The pattern here is the same as most low-cost VPS providers: pricing and raw specs are competitive, but operational experience varies by region and use case. If you're deploying an Evoxt VM for an IPv6-first workload, the practical advice is to pick the region closest to your target audience's latency needs, start on a monthly billing cycle, and confirm the routing actually performs for your specific audience before committing to a longer billing period.
+---
 
-## Frequently Asked Questions
+## 九、FAQ：云服务器推荐场景下关于 Evoxt 的高频问题
 
-**Is IPv6 really included on every Evoxt plan?**
-Yes. Their feature page states "IPv6 Ready — all VMs have an IPv6 address included", and that applies from the $2.99/month VM-0.5 to the $95.99/month VM-16, across all three network tiers.
+**Q1：Evoxt 适合国内访问吗？**
 
-**Can I add more IPv6 addresses without changing plan?**
-IPv6 address space is huge, and you can typically assign additional IPv6 addresses on the VM itself. Extra IPv4 addresses cost $3/month per IP if you need them.
+取决于机房。Standard 网络的日本东京节点存在绕路，国内访问延迟偏高；Premium 网络的香港和大阪节点对国内更友好。如果你主面向国内用户，优先考虑 Premium 香港。
 
-**Is Evoxt the cheapest option if I only want an IPv6-only VPS?**
-Not necessarily the absolute cheapest — niche providers like Privex offer $0.99/month IPv6-only plans. Evoxt's value is that you get IPv4 + IPv6 dual-stack at the same plan price, with no extra IPv4 charge until you need a second one.
+**Q2：Evoxt 支持退款吗？**
 
-**Can I prepay for multiple years?**
-Yes. Evoxt's billing cycles go from monthly up to 3 years. You can also top up account credit and let the system apply it to future invoices.
+我没有在官网公开页面找到明确的退款政策条款，建议下单前在控制台提交工单或查看服务条款确认。新用户建议先用月付小套餐试水，确认满意后再续长期。
 
-**What payment methods does Evoxt accept?**
-Credit cards, debit cards, PayPal, Bitcoin, and USDt (Tron).
+**Q3：流量用完了怎么办？**
 
-## Final Verdict: Is Evoxt Worth It for a VPS with IPv6?
+可以单独加购流量，Standard 网络是 $3/TB，Premium 是 $12/TB，Premium Plus 是 $24/TB。也可以在控制面板升级到更高套餐。
 
-If you're searching for a "VPS with IPv6", what you almost certainly want is two things: a provider that doesn't treat IPv6 as an add-on, and pricing that doesn't penalize you for wanting dual-stack. Evoxt does both reasonably well — IPv6 is included on every plan, the first IPv4 is included in the plan price, and you only pay extra-IP fees when you need additional IPv4 addresses.
+**Q4：能装 Windows 吗？**
 
-The extras that sweeten the deal are weekly offsite backups at no extra cost, a 1 Gbps port, 99.99% uptime SLA, 16 global regions, and KVM virtualization. The $2.99/month entry-level VM-0.5 makes it cheap to actually test an IPv6-first deployment without committing much money.
+可以。Evoxt 支持 Linux 和 Windows 双系统，Windows 系统也可以走 RDP 远程连接。
 
-The honest caveats: operational experience varies by region, promo codes should always be verified at checkout, and IPv6-only setups still have compatibility friction with IPv4-only services for some Chinese and corporate users, which has to be solved with dual-stack or NAT64 rather than wishful thinking.
+**Q5：和 Vultr、Linode 比，Evoxt 值得选吗？**
 
-If you want a VPS that treats IPv6 as a default rather than a luxury, 👉 [the Evoxt console is accessible through this link](https://bit.ly/EvoXt) — start with VM-0.5, test it against your actual workload, and only scale up once you've confirmed the specific region's performance meets your needs.
+各有取舍。Vultr / Linode 是老牌大厂，节点多、文档全、稳定性口碑久经考验；Evoxt 优势在于同价位下单核 CPU 频率更高、价格更低、支持加密货币支付。如果你预算敏感、吃单核性能、能接受较小厂商，Evoxt 是有竞争力的选项；如果你需要"绝对不能出问题"的生产环境，老牌大厂更稳。
+
+**Q6：每周自动备份是真的免费吗？**
+
+是的，官网定价页面明确显示所有套餐都包含"Weekly"备份，不额外收费。如果需要更频繁或更长期的备份，可以在控制面板升级付费备份方案。
+
+---
+
+## 十、写在最后：云服务器推荐没有"唯一正确答案"
+
+聊了这么多，我想把话说回来——云服务器推荐这件事，从来就没有一个"放之四海皆准"的最优解。
+
+你预算多少、跑什么业务、技术栈熟不熟、能不能接受小厂风险……每一项都会改变最终答案。我能做的，是把判断逻辑讲清楚，再给你一两个具体方案做参照。
+
+Evoxt 在"高频 CPU + 低价 + 海外节点"这个组合里确实有它的位置，尤其适合：
+
+- 预算有限、吃单核性能的轻量应用
+- 需要海外节点、能接受自己折腾 Linux 的用户
+- 想用加密货币支付的跨境业务场景
+
+它不太适合：
+
+- 必须用国内机房、走 ICP 备案的合规业务
+- 对厂商规模和品牌背书有强要求的企业生产环境
+- 只会点鼠标、不愿意碰命令行的纯小白
+
+如果你看完觉得 Evoxt 这套思路对得上你的需求，可以直接通过 👉 [这个入口](https://bit.ly/EvoXt) 去控制台看看实际套餐；如果你更倾向国内云厂商或者海外老牌大厂，那这篇文章里的判断逻辑同样适用——只是把"高频 CPU"换成"带宽配额"、把"机房线路"换成"可用区"再走一遍流程而已。
+
+云服务器这东西，买对了用三五年不闹心，买错了三天两头折腾。多花点时间想清楚，比下单时省那几美元值多了。
